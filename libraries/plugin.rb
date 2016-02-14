@@ -263,29 +263,33 @@ EOH
 
       # Compute some versions; Parse them as `Gem::Version` instances for easy
       # comparisons.
-      latest_version = plugin_version(remote_plugin_data['version'])
+      if (! remote_plugin_data.nil?)
+        latest_version = plugin_version(remote_plugin_data['version'])
 
-      # Brute-force install all dependencies
-      if opts[:install_deps] && remote_plugin_data['dependencies'].any?
-        Chef::Log.debug "Installing plugin dependencies for #{plugin_name}"
+        # Brute-force install all dependencies
+        if opts[:install_deps] && remote_plugin_data['dependencies'].any?
+          Chef::Log.debug "Installing plugin dependencies for #{plugin_name}"
 
-        remote_plugin_data['dependencies'].each do |dep|
-          # continue if any version of the dependency is installed
-          if plugin_installation_manifest(dep['name'])
-            Chef::Log.debug "A version of dependency #{dep['name']} is already installed - skipping"
-            next
-          else
-            # only install required dependencies
-            install_plugin_from_update_center(dep['name'], dep['version'], opts) if dep['optional'] == false
-          end
+          remote_plugin_data['dependencies'].each do |dep|
+            # continue if any version of the dependency is installed
+            if plugin_installation_manifest(dep['name'])
+              Chef::Log.debug "A version of dependency #{dep['name']} is already installed - skipping"
+              next
+            else
+              # only install required dependencies
+              install_plugin_from_update_center(dep['name'], dep['version'], opts) if dep['optional'] == false
+            end
         end
+
+        # Replace the latest version with the desired version in the URL
+        source_url = remote_plugin_data['url']
+        source_url.gsub!(latest_version.to_s, desired_version(plugin_name, plugin_version).to_s)
+
+        install_plugin_from_url(source_url, plugin_name, desired_version(plugin_name, plugin_version), opts)
       end
-
-      # Replace the latest version with the desired version in the URL
-      source_url = remote_plugin_data['url']
-      source_url.gsub!(latest_version.to_s, desired_version(plugin_name, plugin_version).to_s)
-
-      install_plugin_from_url(source_url, plugin_name, desired_version(plugin_name, plugin_version), opts)
+      else
+        Chef::Log.warn("unable to get plugin data for #{plugin_name} #{remote_plugin_data}")
+      end
     end
 
     #
