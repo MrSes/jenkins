@@ -138,7 +138,7 @@ EOH
       end
 
       if current_resource.installed?
-        if plugin_version(current_resource.version) == desired_version
+        if ! data_available_for_plugin?(new_resource) || plugin_version(current_resource.version) == desired_version
           Chef::Log.info("#{new_resource} version #{current_resource.version} already installed - skipping")
         else
           current_version = plugin_version(current_resource.version)
@@ -235,6 +235,10 @@ EOH
     end
 
     private
+
+    def data_available_for_plugin?(name)
+      ! plugin_universe[name]. nil?
+    end
 
     def desired_version(name = nil, version = nil)
       name = new_resource.name if name.nil?
